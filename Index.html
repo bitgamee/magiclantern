@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bitcoin Private Key Lottery</title>
+<style>
+  body {
+    background: linear-gradient(135deg, #1e1e2f, #3a3a5a);
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    margin: 0; padding: 0;
+  }
+  .container {
+    max-width: 480px;
+    margin: 40px auto;
+    padding: 20px;
+    background: rgba(30, 30, 47, 0.85);
+    border-radius: 12px;
+    box-shadow: 0 0 15px #ffcc00;
+  }
+  h1 {
+    margin-bottom: 12px;
+  }
+  #key-display {
+    font-family: monospace;
+    background: #222;
+    padding: 16px;
+    border-radius: 8px;
+    height: 40px;
+    line-height: 40px;
+    letter-spacing: 3px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  #key-display .scrolling-keys {
+    position: absolute;
+    white-space: nowrap;
+    will-change: transform;
+  }
+  #spin-wheel {
+    margin: 0 auto 20px;
+    width: 80px;
+    height: 80px;
+    border: 6px solid #ffcc00;
+    border-radius: 50%;
+    border-top-color: #ffaa00;
+    animation: spin 2s linear infinite;
+    display: none;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  #result {
+    font-size: 1.2em;
+    margin: 20px 0;
+    min-height: 48px;
+  }
+  button {
+    background: #ffcc00;
+    border: none;
+    color: #222;
+    font-size: 1.1em;
+    padding: 14px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px #ffcc0055;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #ffaa00;
+  }
+  #btc-image {
+    width: 64px;
+    height: 64px;
+    margin: 20px auto;
+    background: url('https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=024') no-repeat center;
+    background-size: contain;
+  }
+  #usdt-address {
+    margin-top: 30px;
+    background: #111;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: monospace;
+    color: #4aff4a;
+    user-select: all;
+  }
+  #chat-support {
+    margin-top: 40px;
+    background: #222;
+    border-radius: 12px;
+    padding: 15px;
+    height: 280px;
+    overflow-y: auto;
+    text-align: left;
+    font-size: 0.9em;
+  }
+  #chat-input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1em;
+    box-sizing: border-box;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Bitcoin Private Key Lottery</h1>
+  <div id="spin-wheel"></div>
+  <div id="key-display" aria-live="polite" aria-atomic="true" role="status">
+    <!-- Scrolling keys will appear here -->
+    <div class="scrolling-keys"></div>
+  </div>
+  <button id="play-button">Try Your Luck</button>
+  <div id="btc-image"></div>
+  <div id="result" aria-live="polite"></div>
+
+  <div id="usdt-address">
+    USDT (ERC20) Wallet Address:<br />
+    0x6950A999eE60941F7564AdfC1A9E3C770c1ec4ec
+  </div>
+
+  <div id="chat-support">
+    <div id="chat-messages"></div>
+    <input id="chat-input" type="text" placeholder="Type your message here..." />
+  </div>
+</div>
+
+<script>
+  const playButton = document.getElementById('play-button');
+  const keyDisplay = document.querySelector('#key-display .scrolling-keys');
+  const spinWheel = document.getElementById('spin-wheel');
+  const result = document.getElementById('result');
+  const btcImage = document.getElementById('btc-image');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+
+  let intervalId;
+
+  // Generate random private key segments (hex characters)
+  function generateRandomKeySegment(length) {
+    const chars = 'abcdef0123456789';
+    let segment = '';
+    for (let i = 0; i < length; i++) {
+      segment += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return segment;
+  }
+
+  // Animate scrolling keys
+  function animateKeys() {
+    const totalKeys = 20;
+    let keysArray = [];
+    for (let i = 0; i < totalKeys; i++) {
+      keysArray.push(generateRandomKeySegment(10));
+    }
+    let position = 0;
+    keyDisplay.innerHTML = keysArray.join('    ');
+    intervalId = setInterval(() => {
+      position++;
+      keyDisplay.style.transform = `translateX(-${position}px)`;
+      if (position > 1000) position = 0;
+    }, 20);
+  }
+
+  // Stop animation and show final key
+  function stopAnimation() {
+    clearInterval(intervalId);
+    // Choose one key randomly
+    const finalKey = generateRandomKeySegment(10);
+    keyDisplay.style.transform = 'translateX(0)';
+    keyDisplay.innerHTML = finalKey;
+    return finalKey;
+  }
+
+  // Randomly decide win or lose (4 out of 5 lose)
+  function checkWin() {
+    return Math.random() < 0.2; // 20% chance to win
+  }
+
+  // Generate random BTC amount between 0.05 and 2.5
+  function generateBtcAmount() {
+    return (Math.random() * (2.5 - 0.05) + 0.05).toFixed(4);
+  }
+
+  // Handle play button click
+  playButton.addEventListener('click', () => {
+    result.textContent = '';
+    spinWheel.style.display = 'block';
+    keyDisplay.style.transform = 'translateX(0)';
+    keyDisplay.innerHTML = '';
+    animateKeys();
+
+    setTimeout(() => {
+      spinWheel.style.display = 'none';
+      const finalKey = stopAnimation();
+
+      if (checkWin()) {
+        const btcAmount = generateBtcAmount();
+        result.innerHTML = `Congratulations! Your private key has <strong>${btcAmount} BTC</strong>.<br/>To claim it, please send <strong>100 USDT</strong> to the address below.`;
+        btcImage.style.backgroundImage = "url('https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=024')";
+      } else {
+        result.textContent = 'Sorry, this private key has no balance. Try again!';
+        btcImage.style.backgroundImage = 'none';
+      }
+    }, 3000);
+  });
+
+  // Simple chat support mockup
+  chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && chatInput.value.trim() !== '') {
+      const userMsg = document.createElement('div');
+      userMsg.textContent = 'You: ' + chatInput.value;
+      userMsg.style.margin = '8px 0';
+      userMsg.style.color = '#4aff4a';
+      chatMessages.appendChild(userMsg);
+
+      setTimeout(() => {
+        const replyMsg = document.createElement('div');
+        replyMsg.textContent = 'Support: Thank you for contacting us. We will respond soon.';
+        replyMsg.style.margin = '8px 0';
+        replyMsg.style.color = '#ffaa00';
+        chatMessages.appendChild(replyMsg);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }, 1500);
+
+      chatInput.value = '';
+    }
+  });
+</script>
+</body>
+</html>
